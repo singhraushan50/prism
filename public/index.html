@@ -502,8 +502,8 @@ function renderStrip(){
   reveal();
 }
 
-$('#chips').addEventListener('click', e => {
-  const chip = e.target.closest('.chip');
+document.addEventListener('click', e => {
+  const chip = e.target.closest('#chips .chip');
   if(!chip) return;
   $$('.chip').forEach(c => c.classList.remove('on'));
   chip.classList.add('on');
