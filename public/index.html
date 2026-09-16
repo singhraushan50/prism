@@ -387,24 +387,25 @@ function renderTrending(){
     .sort((a,b) => (b.metrics.likes/Math.max(b.time,1)) - (a.metrics.likes/Math.max(a.time,1)))
     .slice(0,6);
 
-  $('#trendList').innerHTML = trend.map((s,i) => {
-    const vel = s.velocity || Math.round(s.metrics.likes / Math.max(s.time,1) * 10) / 10;
-    return `
-      <div class="titem">
-        <span class="rank">${String(i+1).padStart(2,'0')}</span>
-        <div class="tt">
-          <h4>${s.title}</h4>
-          <div class="tmeta">
-            ${mark(s.platform)}
-            <span>${s.source}</span>
-            <span class="vel">
-              <svg viewBox="0 0 24 24"><path d="M12 4 4 14h6l-2 6 10-12h-6l2-4z"/></svg>
-              ${vel}/min
-            </span>
-          </div>
+ $('#trendList').innerHTML = trend.map((s,i) => {
+  const vel = s.velocity || Math.round(s.metrics.likes / Math.max(s.time,1) * 10) / 10;
+  return `
+    <a class="titem" href="${s.url || '#'}" target="_blank" rel="noopener">
+      <span class="rank">${String(i+1).padStart(2,'0')}</span>
+      <div class="tt">
+        <h4>${s.title}</h4>
+        <div class="tmeta">
+          ${mark(s.platform)}
+          <span>${s.source}</span>
+          <span class="vel">
+            <svg viewBox="0 0 24 24"><path d="M12 4 4 14h6l-2 6 10-12h-6l2-4z"/></svg>
+            ${vel}/min
+          </span>
+          <span style="margin-left:auto;color:var(--dim)">→</span>
         </div>
-      </div>`;
-  }).join('');
+      </div>
+    </a>`;
+}).join('');
 }
 
 const CATS = ['All', ...new Set(STORIES.map(s => s.cat))];
