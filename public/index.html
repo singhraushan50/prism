@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prism — The signal, not the noise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080a;--bg-soft:#0d0d11;
+  --surface:rgba(255,255,255,.035);--surface-2:rgba(255,255,255,.065);
+  --line:rgba(255,255,255,.085);--line-2:rgba(255,255,255,.18);
+  --text:#f4f4f6;--muted:#8c8c98;--dim:#5b5b66;
+  --accent:#ff5a36;--accent-2:#ffb03a;
+  --radius:22px;--ease:cubic-bezier(.2,.8,.2,1);--maxw:1320px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 520px at 10% -8%,rgba(255,90,54,.16),transparent 62%),radial-gradient(760px 520px at 96% -4%,rgba(88,120,255,.11),transparent 62%),radial-gradient(900px 700px at 50% 110%,rgba(255,176,58,.06),transparent 65%)}
+body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.028;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+::selection{background:var(--accent);color:#fff}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 26px;position:relative;z-index:2}
+
+.ticker{position:relative;z-index:60;height:38px;display:flex;align-items:center;gap:0;background:linear-gradient(90deg,rgba(255,90,54,.14),rgba(255,90,54,.03) 45%,rgba(255,255,255,.02));border-bottom:1px solid var(--line);overflow:hidden}
+.ticker-live{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:0 16px;height:100%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.8s var(--ease) infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.ticker-viewport{flex:1;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 94%,transparent)}
+.ticker-track{display:flex;width:max-content;animation:marquee 68s linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-set{display:flex;align-items:center;gap:40px;padding-right:40px}
+.tk{display:flex;align-items:center;gap:9px;font-size:12.5px;white-space:nowrap;color:#c8c8d0}
+.tk b{color:#fff;font-weight:600}
+.tk span{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.04em}
+.tk-sep{width:4px;height:4px;border-radius:50%;background:var(--line-2);flex:0 0 auto}
+
+.nav{position:sticky;top:0;z-index:50;background:rgba(8,8,10,.74);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:28px;height:66px}
+.logo{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.logo-mark{width:22px;height:22px;border-radius:6px;position:relative;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 22px rgba(255,90,54,.45);transform:rotate(45deg)}
+.logo-mark::after{content:'';position:absolute;inset:6px;border-radius:2px;background:var(--bg)}
+.logo-txt{font-size:18px;font-weight:800;letter-spacing:.19em}
+.logo-sub{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;margin-left:2px;padding-left:11px;border-left:1px solid var(--line-2)}
+.nav-links{display:flex;gap:4px;margin-left:8px}
+.nav-links a{font-size:13.5px;font-weight:500;color:var(--muted);padding:7px 12px;border-radius:9px;transition:.25s var(--ease);position:relative;white-space:nowrap}
+.nav-links a:hover{color:#fff;background:var(--surface)}
+.nav-links a.on{color:#fff}
+.nav-links a.on::after{content:'';position:absolute;left:12px;right:12px;bottom:1px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.search{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:8px 13px;width:230px;transition:.3s var(--ease)}
+.search:focus-within{border-color:var(--line-2);background:var(--surface-2);width:265px}
+.search svg{width:14px;height:14px;stroke:var(--dim);flex:0 0 auto}
+.search input{background:none;border:none;outline:none;color:#fff;font-size:13px;width:100%;font-family:inherit}
+.search input::placeholder{color:var(--dim)}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:2px 5px;flex:0 0 auto}
+.icon-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;transition:.25s var(--ease);position:relative}
+.icon-btn:hover{background:var(--surface-2);border-color:var(--line-2);transform:translateY(-1px)}
+.icon-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:1.7}
+.icon-btn .badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg)}
+
+.hero{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,1fr);gap:22px;padding:34px 0 8px}
+.feature{position:relative;border-radius:26px;overflow:hidden;min-height:540px;display:flex;align-items:flex-end;border:1px solid var(--line);isolation:isolate;background:linear-gradient(140deg,#1a1216,#0d0d12)}
+.feature img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform 1.6s var(--ease);filter:saturate(.92) contrast(1.04)}
+.feature:hover img{transform:scale(1.05)}
+.feature::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(8,8,10,.97) 2%,rgba(8,8,10,.82) 30%,rgba(8,8,10,.28) 62%,rgba(8,8,10,.12))}
+.feature-body{padding:38px 40px 36px;width:100%}
+.tag-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.08);border:1px solid var(--line-2);backdrop-filter:blur(8px)}
+.tag.accent{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+.feature h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(31px,3.5vw,54px);line-height:1.04;letter-spacing:-.022em;margin-bottom:16px;max-width:19ch}
+.feature h1 em{font-style:italic;color:var(--accent-2)}
+.feature p{color:#b7b7c2;font-size:15px;line-height:1.62;max-width:60ch;margin-bottom:24px;font-weight:300}
+.byline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--line)}
+.byline .who{display:flex;align-items:center;gap:9px;font-size:13px;color:#dcdce4;font-weight:500}
+.byline .sep{width:3px;height:3px;border-radius:50%;background:var(--dim)}
+.byline .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.03em}
+.src-link{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#fff;padding:9px 15px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid var(--line-2);transition:.25s var(--ease);backdrop-filter:blur(8px)}
+.src-link:hover{background:#fff;color:#08080a;transform:translateY(-2px)}
+.src-link svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2}
+
+.trend{border:1px solid var(--line);border-radius:26px;padding:24px 22px 14px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.012));display:flex;flex-direction:column}
+.trend-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.trend-head h2{font-size:11px;font-weight:800;letter-spacing:.19em;text-transform:uppercase;color:#fff;display:flex;align-items:center;gap:9px}
+.trend-head h2 .dot{background:var(--accent);width:7px;height:7px}
+.trend-head .cnt{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim)}
+.trend-sub{font-size:11.5px;color:var(--dim);margin-bottom:14px;line-height:1.5}
+.tlist{display:flex;flex-direction:column}
+.titem{display:flex;gap:14px;padding:13px 8px 13px 4px;border-top:1px solid var(--line);cursor:pointer;transition:.28s var(--ease);border-radius:10px;margin:0 -8px;position:relative}
+.titem:first-child{border-top:none}
+.titem:hover{background:var(--surface);padding-left:12px}
+.titem .rank{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--dim);flex:0 0 auto;width:22px;line-height:1.35;transition:.28s var(--ease)}
+.titem:hover .rank{color:var(--accent)}
+.titem .tt{flex:1;min-width:0}
+.titem .tt h4{font-size:13.5px;font-weight:500;line-height:1.42;color:#e6e6ec;margin-bottom:7px;letter-spacing:-.005em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.titem:hover .tt h4{color:#fff}
+.titem .tt .tmeta{display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.vel{display:inline-flex;align-items:center;gap:4px;color:#4ade80;font-weight:600}
+.vel svg{width:9px;height:9px;fill:#4ade80}
+
+.mark{width:20px;height:20px;border-radius:6px;flex:0 0 auto;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:-.03em}
+.check{width:12px;height:12px;flex:0 0 auto}
+.check path{fill:#4d9dff}
+
+.bar{display:flex;align-items:center;gap:16px;padding:36px 0 20px;flex-wrap:wrap}
+.bar-title{font-family:'Instrument Serif',serif;font-size:26px;letter-spacing:-.01em;margin-right:4px;white-space:nowrap}
+.bar-title em{font-style:italic;color:var(--dim)}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{font-size:12.5px;font-weight:500;color:var(--muted);padding:7px 14px;border-radius:20px;border:1px solid var(--line);background:var(--surface);transition:.25s var(--ease);white-space:nowrap}
+.chip:hover{color:#fff;border-color:var(--line-2);transform:translateY(-1px)}
+.chip.on{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;font-weight:600;box-shadow:0 5px 20px rgba(255,90,54,.28)}
+.count{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);white-space:nowrap}
+
+.feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:20px;padding-bottom:12px}
+.card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);display:flex;flex-direction:column;transition:transform .4s var(--ease),border-color .4s var(--ease),background .4s var(--ease),box-shadow .4s var(--ease)}
+.card:hover{transform:translateY(-5px);border-color:var(--line-2);background:var(--surface-2);box-shadow:0 22px 50px -22px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.03)}
+.card-media{position:relative;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(140deg,#1b1318,#0e0e13)}
+.card-media img{width:100%;height:100%;object-fit:cover;transition:transform 1s var(--ease);filter:saturate(.9)}
+.card:hover .card-media img{transform:scale(1.07)}
+.card-media::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(8,8,10,.6),transparent 55%)}
+.badge-type{position:absolute;top:12px;left:12px;z-index:2;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:5px 9px;border-radius:7px;backdrop-filter:blur(10px);background:rgba(10,10,14,.6);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;gap:6px}
+.badge-type i{width:5px;height:5px;border-radius:50%;display:block}
+.badge-type.social i{background:#4ade80;box-shadow:0 0 8px #4ade80}
+.badge-type.news i{background:#ff5a36;box-shadow:0 0 8px #ff5a36}
+.card-body{padding:17px 18px 18px;display:flex;flex-direction:column;flex:1}
+.src{display:flex;align-items:center;gap:8px;margin-bottom:11px;flex-wrap:wrap}
+.src-name{font-size:12.5px;font-weight:600;color:#e2e2ea;letter-spacing:-.005em}
+.src .sep{width:3px;height:3px;border-radius:50%;background:var(--dim)}
+.src .time{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim)}
+.card-title{font-family:'Instrument Serif',serif;font-weight:400;font-size:20.5px;line-height:1.22;letter-spacing:-.012em;margin-bottom:9px;color:#f6f6f8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card:hover .card-title{color:#fff}
+.card-sum{font-size:13px;line-height:1.58;color:var(--muted);font-weight:300;margin-bottom:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-foot{margin-top:auto;display:flex;align-items:center;gap:14px;padding-top:14px;border-top:1px solid var(--line)}
+.metric{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim)}
+.metric svg{width:12px;height:12px;stroke:var(--dim);fill:none;stroke-width:1.8}
+.metric:hover{color:var(--muted)}
+.src-open{margin-left:auto;font-size:11px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:5px;transition:.25s var(--ease)}
+.src-open svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;transition:.25s var(--ease)}
+.src-open:hover{color:var(--accent)}
+.src-open:hover svg{transform:translate(2px,-2px)}
+.bm{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;border:1px solid transparent;transition:.25s var(--ease);flex:0 0 auto}
+.bm:hover{background:var(--surface-2);border-color:var(--line)}
+.bm svg{width:13px;height:13px;stroke:var(--dim);fill:none;stroke-width:1.8;transition:.25s var(--ease)}
+.bm.on svg{stroke:var(--accent);fill:var(--accent)}
+.empty{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--dim);font-family:'Instrument Serif',serif;font-size:22px}
+
+.channels{padding:56px 0 20px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.sec-head h2{font-family:'Instrument Serif',serif;font-size:30px;font-weight:400;letter-spacing:-.015em}
+.sec-head h2 em{font-style:italic;color:var(--accent-2)}
+.sec-head p{font-size:12.5px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.strip{display:flex;gap:16px;overflow-x:auto;padding:4px 2px 22px;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.strip::-webkit-scrollbar{height:5px}
+.strip::-webkit-scrollbar-track{background:transparent}
+.strip::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+.ch-card{flex:0 0 268px;scroll-snap-align:start;border:1px solid var(--line);border-radius:18px;padding:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));transition:.35s var(--ease);cursor:pointer}
+.ch-card:hover{transform:translateY(-4px);border-color:var(--line-2);background:var(--surface-2)}
+.ch-top{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.ch-logo{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:13px;font-weight:800;letter-spacing:-.04em;flex:0 0 auto}
+.ch-name{font-size:13px;font-weight:600;line-height:1.2}
+.ch-live{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;color:#4ade80;margin-top:3px}
+.ch-live i{width:5px;height:5px;border-radius:50%;background:#4ade80;animation:pulse 1.8s var(--ease) infinite}
+.ch-card h4{font-family:'Instrument Serif',serif;font-size:16.5px;line-height:1.32;font-weight:400;color:#e8e8ee;margin-bottom:10px;letter-spacing:-.008em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ch-card:hover h4{color:#fff}
+.ch-foot{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);display:flex;justify-content:space-between;align-items:center;padding-top:11px;border-top:1px solid var(--line)}
+
+footer{margin-top:64px;border-top:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(255,255,255,.016))}
+.foot-in{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;padding:52px 0 40px}
+.foot-brand p{font-size:13px;color:var(--muted);line-height:1.68;margin-top:14px;max-width:36ch;font-weight:300}
+.foot-col h5{font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;color:#fff;margin-bottom:15px}
+.foot-col a{display:block;font-size:13px;color:var(--muted);padding:5px 0;transition:.25s var(--ease);width:fit-content}
+.foot-col a:hover{color:var(--accent);transform:translateX(3px)}
+.foot-bot{border-top:1px solid var(--line);padding:22px 0 30px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim)}
+.foot-bot .demo{padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);letter-spacing:.06em}
+.foot-bot .r{margin-left:auto;display:flex;gap:18px}
+
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,140%);z-index:100;display:flex;align-items:center;gap:12px;padding:11px 12px 11px 18px;border-radius:999px;background:rgba(18,18,24,.92);border:1px solid var(--line-2);backdrop-filter:blur(20px) saturate(180%);box-shadow:0 24px 60px -18px rgba(0,0,0,.95);transition:transform .55s var(--ease);cursor:pointer}
+.toast.show{transform:translate(-50%,0)}
+.toast:hover{border-color:rgba(255,255,255,.3)}
+.toast .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.6s var(--ease) infinite}
+.toast span{font-size:13px;font-weight:500;white-space:nowrap}
+.toast b{color:var(--accent)}
+.toast .go{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:11.5px;font-weight:700;padding:7px 15px;border-radius:999px}
+
+.rv{opacity:0;transform:translateY(18px)}
+.rv.in{opacity:1;transform:none;transition:opacity .75s var(--ease),transform .75s var(--ease)}
+
+@media(max-width:1080px){.nav-links{display:none}.hero{grid-template-columns:1fr}.feature{min-height:460px}.foot-in{grid-template-columns:1fr 1fr;gap:32px}}
+@media(max-width:720px){.wrap{padding:0 18px}.search{width:150px}.search:focus-within{width:180px}.kbd{display:none}.logo-sub{display:none}.feature-body{padding:26px 22px 24px}.feature{min-height:400px}.foot-in{grid-template-columns:1fr;gap:28px}.bar-title{font-size:22px;width:100%}.count{width:100%;margin-left:0}.toast{left:16px;right:16px;transform:translate(0,140%);bottom:16px}.toast.show{transform:translate(0,0)}.toast span{white-space:normal}}
+</style>
+</head>
+<body>
+
+<div class="ticker">
+  <div class="ticker-live"><span class="dot"></span>Live</div>
+  <div class="ticker-viewport"><div class="ticker-track" id="tickerTrack"></div></div>
+</div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a href="#" class="logo">
+      <span class="logo-mark"></span>
+      <span class="logo-txt">PRISM</span>
+      <span class="logo-sub">signal / noise</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#" class="on">Top</a><a href="#">World</a><a href="#">Tech</a>
+      <a href="#">Business</a><a href="#">Science</a><a href="#">Culture</a>
+    </nav>
+    <div class="nav-right">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="text" id="search" placeholder="Search stories, sources…" autocomplete="off">
+        <span class="kbd">?K</span>
+      </label>
+      <button class="icon-btn" title="Saved stories">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span class="badge" id="savedBadge" style="display:none">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <article class="feature rv" id="feature"></article>
+    <aside class="trend rv" style="transition-delay:.08s">
+      <div class="trend-head">
+        <h2><span class="dot"></span>Trending right now</h2>
+        <span class="cnt">live</span>
+      </div>
+      <p class="trend-sub">Ranked by cross-platform velocity in the last 6 hours.</p>
+      <div class="tlist" id="trendList"></div>
+    </aside>
+  </section>
+
+  <section class="bar">
+    <h2 class="bar-title">The <em>feed</em></h2>
+    <div class="chips" id="chips"></div>
+    <span class="count" id="count">—</span>
+  </section>
+
+  <section class="feed" id="feed"></section>
+
+  <section class="channels">
+    <div class="sec-head">
+      <h2>Live from the <em>newsrooms</em></h2>
+      <p>— direct feeds, verified outlets</p>
+    </div>
+    <div class="strip" id="strip"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-in">
+      <div class="foot-brand">
+        <a href="#" class="logo"><span class="logo-mark"></span><span class="logo-txt">PRISM</span></a>
+        <p>We pull from public social posts and verified newsroom feeds, then re-rank everything by real signal — recency, velocity and cross-source corroboration. Every card links straight back to the original.</p>
+      </div>
+      <div class="foot-col"><h5>Sections</h5><a href="#">Top stories</a><a href="#">World</a><a href="#">Technology</a><a href="#">Business</a><a href="#">Science</a></div>
+      <div class="foot-col"><h5>Sources</h5><a href="#">Social platforms</a><a href="#">Newsrooms</a><a href="#">Our ranking method</a><a href="#">Attribution policy</a></div>
+      <div class="foot-col"><h5>Prism</h5><a href="#">About</a><a href="#">API access</a><a href="#">Privacy</a><a href="#">Contact</a></div>
+    </div>
+    <div class="foot-bot">
+      <span>© 2025 Prism Media</span>
+      <span class="demo">DEMO · SAMPLE DATA</span>
+      <div class="r"><span>All headlines attributed to their original publishers</span></div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast">
+  <span class="pulse"></span>
+  <span id="toastText"><b>4 new stories</b> just landed</span>
+  <span class="go">Refresh</span>
+</div>
+
+<script>
+const P = {
+  web:{short:'?',color:'#9aa0aa',soft:'rgba(154,160,170,.14)',name:'Newsroom'},
+  x:{short:'X',color:'#ffffff',soft:'rgba(255,255,255,.13)',name:'X'},
+  reddit:{short:'r/',color:'#ff5a1f',soft:'rgba(255,90,31,.15)',name:'Reddit'},
+  youtube:{short:'YT',color:'#ff3b30',soft:'rgba(255,59,48,.15)',name:'YouTube'},
+  instagram:{short:'IG',color:'#e1306c',soft:'rgba(225,48,108,.15)',name:'Instagram'},
+  linkedin:{short:'in',color:'#3b9eff',soft:'rgba(59,158,255,.15)',name:'LinkedIn'},
+  bluesky:{short:'B',color:'#3b9eff',soft:'rgba(59,158,255,.15)',name:'Bluesky'},
+  mastodon:{short:'M',color:'#8b5cf6',soft:'rgba(139,92,246,.15)',name:'Mastodon'},
+  hn:{short:'Y',color:'#ff8a3d',soft:'rgba(255,138,61,.15)',name:'Hacker News'}
+};
+
+let STORIES = [];
+
+const OFFLINE_SAMPLES = [
+  {id:1,cat:'Climate',featured:true,channel:true,platform:'web',source:'Reuters',verified:true,handle:'@reuters',time:14,seed:'harborstorm',title:'Coastal cities begin testing floating flood barriers as sea levels set new records',summary:'Three port cities have started a year-long pilot of modular barriers that rise with the tide, a design that engineers say could be retrofitted into existing harbour walls at a fraction of the cost of permanent sea defences.',metrics:{likes:2140,comments:318}},
+  {id:2,cat:'World',channel:true,platform:'web',source:'Al Jazeera',verified:true,handle:'@aljazeera',time:38,seed:'citytalk',title:'Ceasefire talks resume as mediators push for a durable framework',summary:'Negotiators returned to the table after a week-long pause, with both delegations describing the latest draft as "the most substantive text so far."',metrics:{likes:890,comments:204}},
+  {id:3,cat:'Tech',channel:false,platform:'hn',source:'Hacker News',verified:false,handle:'news.ycombinator.com',time:22,seed:'circuitboard',title:'Open-source model matches frontier performance at a fraction of the compute',summary:'The release includes full training logs and a reproducible eval harness — a first for a model at this scale, according to the maintainers.',metrics:{likes:1840,comments:462}},
+  {id:4,cat:'Business',channel:true,platform:'web',source:'Bloomberg',verified:true,handle:'@business',time:51,seed:'tradingfloor',title:'Central banks signal a slower path on rate cuts amid sticky services inflation',summary:'Policymakers pointed to wage growth in hospitality and healthcare as the last stubborn component keeping headline figures above target.',metrics:{likes:640,comments:97}},
+  {id:5,cat:'Science',channel:true,platform:'web',source:'Nature',verified:true,handle:'@nature',time:64,seed:'telescope',title:'Space telescope detects water vapour in the atmosphere of a rocky world',summary:'The signal is faint but statistically robust, and comes from a planet orbiting well inside its star\'s habitable zone.',metrics:{likes:3120,comments:271}},
+  {id:6,cat:'Tech',channel:false,platform:'x',source:'@transitdiaries',verified:false,handle:'thread · 14 posts',time:180,seed:'subwaymap',title:'I mapped every subway system on Earth by train frequency. Here is what the data actually shows.',summary:'Peak service varies by a factor of eleven between the best and worst-ranked networks — and the gap has nothing to do with city size.',metrics:{likes:12400,comments:1830}},
+  {id:7,cat:'Culture',channel:true,platform:'web',source:'The Guardian',verified:true,handle:'@guardian',time:132,seed:'oldlibrary',title:'A 400-year-old library catalogue just went online — and it is full of surprises',summary:'Digitising the ledger revealed that roughly a fifth of the collection was never actually returned by its borrowers.',metrics:{likes:1520,comments:188}},
+  {id:8,cat:'Health',channel:true,platform:'web',source:'NPR',verified:true,handle:'@npr',time:296,seed:'labresearch',title:'New trial shows promise for a once-weekly insulin option',summary:'Participants reported fewer severe hypoglycaemic episodes than with daily dosing, though the study window was only six months.',metrics:{likes:980,comments:142}},
+  {id:9,cat:'Science',channel:false,platform:'reddit',source:'r/askscience',verified:false,handle:'3.2k upvotes · 890 comments',time:245,seed:'microscope',title:'Why do we still not have a universal flu vaccine after forty years of trying?',summary:'Top answer: it is not a funding problem — it is that the virus\'s surface proteins drift faster than any single antibody target can hold.',metrics:{likes:3200,comments:890}},
+  {id:10,cat:'Business',channel:true,platform:'web',source:'Reuters',verified:true,handle:'@reuters',time:410,seed:'containership',title:'Shipping rates spike as carriers reroute around the Red Sea',summary:'Spot rates on Asia–Europe routes have roughly doubled in three weeks, with knock-on delays expected into next quarter.',metrics:{likes:720,comments:110}},
+  {id:11,cat:'Culture',channel:true,platform:'web',source:'BBC News',verified:true,handle:'@bbcnews',time:480,seed:'vinylstore',title:'Vinyl outsells CDs for the third consecutive year',summary:'Analysts credit the growth to bundled edition sales rather than a genuine shift in listening habits.',metrics:{likes:1130,comments:265}},
+  {id:12,cat:'Tech',channel:false,platform:'youtube',source:'Emergent Econ',verified:false,handle:'18:42 · 1.2M views',time:340,seed:'cityaerial',title:'Video essay: the actual economics of a fifteen-minute city',summary:'A breakdown of the land-value math behind walkable districts — and why the model struggles outside a narrow band of densities.',metrics:{likes:48000,comments:4100}}
+];
+
+const TICKER = [
+  ['Reuters','Coastal cities begin testing floating flood barriers'],
+  ['Hacker News','Open-source model matches frontier performance at 1/20th compute'],
+  ['Al Jazeera','Ceasefire talks resume as mediators push for durable framework'],
+  ['Bloomberg','Central banks signal slower path on rate cuts'],
+  ['Nature','Space telescope detects water vapour on rocky world'],
+  ['The Guardian','400-year-old library catalogue goes online'],
+  ['AP','Election monitors report record turnout in closely watched vote']
+];
+
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function timeAgo(m){
+  if(m < 1) return 'just now';
+  if(m < 60) return m + 'm ago';
+  const h = Math.floor(m/60);
+  if(h < 24) return h + 'h ago';
+  return Math.floor(h/24) + 'd ago';
+}
+function fmt(n){
+  if(n >= 1000000) return (n/1000000).toFixed(1).replace('.0','') + 'M';
+  if(n >= 1000)    return (n/1000).toFixed(1).replace('.0','') + 'k';
+  return n;
+}
+function mark(p){
+  const c = P[p] || P.web;
+  return `<span class="mark" style="color:${c.color};background:${c.soft}">${c.short}</span>`;
+}
+function verifiedSVG(){
+  return `<svg class="check" viewBox="0 0 24 24"><path d="M12 1.5 14.6 4l3.5-.4 1 3.4 3 1.9-1.3 3.3 1.3 3.3-3 1.9-1 3.4-3.5-.4L12 22.5 9.4 20l-3.5.4-1-3.4-3-1.9L3.2 12 1.9 8.7l3-1.9 1-3.4L9.4 4 12 1.5Z" opacity=".95"/><path d="M10.7 15.2 7.9 12.4l1.1-1.1 1.7 1.7 4.2-4.2 1.1 1.1-5.3 5.3Z" fill="#0b0b0f"/></svg>`;
+}
+
+(function renderTicker(){
+  const set = TICKER.map(([src, txt]) =>
+    `<div class="tk"><span>${src}</span><b>${txt}</b><span>·</span></div>`
+  ).join('<div class="tk-sep"></div>');
+  $('#tickerTrack').innerHTML =
+    `<div class="ticker-set">${set}</div><div class="ticker-set" aria-hidden="true">${set}</div>`;
+})();
+
+function renderFeature(){
+  const s = STORIES.find(x => x.featured) || STORIES[0];
+  if(!s) return;
+  const p = P[s.platform] || P.web;
+  const img = s.image || `https://picsum.photos/seed/${s.seed}/1400/900`;
+  $('#feature').innerHTML = `
+    <img src="${img}" alt="" loading="eager">
+    <div class="feature-body">
+      <div class="tag-row">
+        <span class="tag accent">Top story</span>
+        <span class="tag">${s.cat}</span>
+        <span class="tag" style="color:${p.color}">via ${p.name}</span>
+      </div>
+      <h1>${s.title}</h1>
+      <p>${s.summary}</p>
+      <div class="byline">
+        ${mark(s.platform)}
+        <span class="who">${s.source} ${s.verified ? verifiedSVG() : ''}</span>
+        <span class="sep"></span>
+        <span class="meta">${timeAgo(s.time)}</span>
+        <a class="src-link" href="${s.url || '#'}" target="_blank" rel="noopener">
+          Read at source
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
+    </div>`;
+}
+
+function renderTrending(){
+  const trend = [...STORIES]
+    .filter(s => s.metrics)
+    .sort((a,b) => (b.metrics.likes/Math.max(b.time,1)) - (a.metrics.likes/Math.max(a.time,1)))
+    .slice(0,6);
+
+  $('#trendList').innerHTML = trend.map((s,i) => {
+    const vel = s.velocity || Math.round(s.metrics.likes / Math.max(s.time,1) * 10) / 10;
+    return `
+      <div class="titem">
+        <span class="rank">${String(i+1).padStart(2,'0')}</span>
+        <div class="tt">
+          <h4>${s.title}</h4>
+          <div class="tmeta">
+            ${mark(s.platform)}
+            <span>${s.source}</span>
+            <span class="vel">
+              <svg viewBox="0 0 24 24"><path d="M12 4 4 14h6l-2 6 10-12h-6l2-4z"/></svg>
+              ${vel}/min
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+const CATS = ['All', ...new Set(STORIES.map(s => s.cat))];
+function renderChips(){
+  const cats = ['All', ...new Set(STORIES.map(s => s.cat))];
+  $('#chips').innerHTML = cats.map((c,i) =>
+    `<button class="chip ${c === state.cat ? 'on' : (i===0 && state.cat==='All' ? 'on':'')}" data-cat="${c}">${c}</button>`
+  ).join('');
+}
+
+const state = { cat:'All', q:'', saved:new Set() };
+
+function cardHTML(s){
+  const p = P[s.platform] || P.web;
+  const isSocial = !s.channel;
+  const img = s.image || `https://picsum.photos/seed/${s.seed}/800/450`;
+  return `
+  <article class="card rv" data-id="${s.id}">
+    <div class="card-media">
+      <span class="badge-type ${isSocial ? 'social' : 'news'}">
+        <i></i>${isSocial ? 'Social' : 'Newsroom'}
+      </span>
+      <img src="${img}" alt="" loading="lazy">
+    </div>
+    <div class="card-body">
+      <div class="src">
+        ${mark(s.platform)}
+        <span class="src-name">${s.source}</span>
+        ${s.verified ? verifiedSVG() : ''}
+        <span class="sep"></span>
+        <span class="time">${timeAgo(s.time)}</span>
+      </div>
+      <h3 class="card-title">${s.title}</h3>
+      <p class="card-sum">${s.summary}</p>
+      <div class="card-foot">
+        <span class="metric">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+          ${fmt(s.metrics.likes)}
+        </span>
+        <span class="metric">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-4.9A8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+          ${fmt(s.metrics.comments)}
+        </span>
+        <button class="bm ${state.saved.has(s.id)?'on':''}" data-save="${s.id}" title="Save story">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <a class="src-open" href="${s.url || '#'}" target="_blank" rel="noopener">
+          ${p.name}
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+        </a>
+      </div>
+    </div>
+  </article>`;
+}
+
+function render(){
+  const q = state.q.toLowerCase().trim();
+  const list = STORIES.filter(s => {
+    const catOk = state.cat === 'All' || s.cat === state.cat;
+    const qOk = !q || (s.title + ' ' + s.summary + ' ' + s.source + ' ' + s.cat).toLowerCase().includes(q);
+    return catOk && qOk;
+  });
+
+  $('#feed').innerHTML = list.length
+    ? list.map(cardHTML).join('')
+    : `<div class="empty">No stories match that filter — try another section.</div>`;
+
+  $('#count').textContent = `${list.length} ${list.length === 1 ? 'story' : 'stories'} · updated just now`;
+  reveal();
+}
+
+function renderStrip(){
+  const chans = [
+    {n:'Reuters',      c:'#ff8000', l:'R', h:'Coastal cities begin testing floating flood barriers', t:'2m'},
+    {n:'BBC News',     c:'#bb1919', l:'B', h:'Vinyl outsells CDs for the third consecutive year', t:'8m'},
+    {n:'Al Jazeera',   c:'#fa9000', l:'A', h:'Ceasefire talks resume as mediators push forward', t:'11m'},
+    {n:'AP',           c:'#e2231a', l:'AP',h:'Election monitors report record turnout', t:'14m'},
+    {n:'Bloomberg',    c:'#4a90d9', l:'B', h:'Central banks signal slower path on rate cuts', t:'17m'},
+    {n:'The Guardian', c:'#052962', l:'G', h:'Europe\'s heat pump rollout hits a supply chain wall', t:'21m'},
+    {n:'Nature',       c:'#c8102e', l:'N', h:'Space telescope detects water vapour on rocky world', t:'26m'},
+    {n:'NPR',          c:'#f15a29', l:'N', h:'New trial shows promise for once-weekly insulin', t:'31m'}
+  ];
+  $('#strip').innerHTML = chans.map(c => `
+    <div class="ch-card rv">
+      <div class="ch-top">
+        <span class="ch-logo" style="background:${c.c}22;color:${c.c};border:1px solid ${c.c}44">${c.l}</span>
+        <div>
+          <div class="ch-name">${c.n}</div>
+          <div class="ch-live"><i></i>LIVE FEED</div>
+        </div>
+      </div>
+      <h4>${c.h}</h4>
+      <div class="ch-foot"><span>via RSS</span><span>${c.t} ago</span></div>
+    </div>`).join('');
+  reveal();
+}
+
+$('#chips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  $$('.chip').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  state.cat = chip.dataset.cat;
+  render();
+});
+
+let searchTimer;
+$('#search').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { state.q = e.target.value; render(); }, 160);
+});
+
+document.addEventListener('keydown', e => {
+  if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){
+    e.preventDefault(); $('#search').focus();
+  }
+});
+
+$('#feed').addEventListener('click', e => {
+  const btn = e.target.closest('[data-save]');
+  if(!btn) return;
+  const id = btn.dataset.save;
+  if(state.saved.has(id)) state.saved.delete(id);
+  else state.saved.add(id);
+  btn.classList.toggle('on', state.saved.has(id));
+  const badge = $('#savedBadge');
+  badge.textContent = state.saved.size;
+  badge.style.display = state.saved.size ? 'grid' : 'none';
+});
+
+let io;
+function reveal(){
+  if(!io){
+    io = new IntersectionObserver(entries => {
+      entries.forEach((entry, i) => {
+        if(entry.isIntersecting){
+          const el = entry.target;
+          const delay = Math.min(i * 55, 320);
+          setTimeout(() => el.classList.add('in'), delay);
+          io.unobserve(el);
+        }
+      });
+    }, { rootMargin:'0px 0px -8% 0px', threshold:.06 });
+  }
+  $$('.rv:not(.in)').forEach(el => io.observe(el));
+}
+
+const toast = $('#toast');
+let toastTimer = setTimeout(showToast, 9000);
+function showToast(){
+  const n = 2 + Math.floor(Math.random()*4);
+  $('#toastText').innerHTML = `<b>${n} new stories</b> just landed`;
+  toast.classList.add('show');
+}
+toast.addEventListener('click', async () => {
+  toast.classList.remove('show');
+  await loadStories();
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(showToast, 26000);
+});
+
+// -- Live data loader ------------------------------
+// Set this to your Cloudflare Worker URL once deployed, e.g.:
+//   const API_URL = 'https://singhraushan--c8cb92ecb13811f1ae1a1607ee4eb77e.web.val.run/feed';
+const API_URL = ''; // leave empty to use offline samples
+
+async function loadStories(){
+  if(!API_URL){
+    STORIES = OFFLINE_SAMPLES;
+  } else {
+    try {
+      const res = await fetch(API_URL);
+      if(!res.ok) throw new Error('API ' + res.status);
+      const data = await res.json();
+      STORIES = (data.stories && data.stories.length) ? data.stories : OFFLINE_SAMPLES;
+    } catch(err){
+      console.warn('feed fetch failed, using offline samples:', err);
+      STORIES = OFFLINE_SAMPLES;
+    }
+  }
+  renderFeature();
+  renderTrending();
+  renderChips();
+  render();
+}
+
+renderStrip();
+loadStories();
+window.addEventListener('load', reveal);
+</script>
+</body>
+</html>
