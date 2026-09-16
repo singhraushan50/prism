@@ -1,0 +1,17 @@
+name = "prism-api"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Cron: refresh every 10 minutes
+[triggers]
+crons = ["*/10 * * * *"]
+
+# KV binding is optional. If you want caching, create a KV namespace in
+# the Cloudflare dashboard and uncomment the block below, replacing the id.
+#
+# [[kv_namespaces]]
+# binding = "PRISM_CACHE"
+# id = "your-kv-namespace-id-here"
+
+[vars]
+CACHE_TTL = "600"
